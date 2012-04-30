@@ -66,6 +66,10 @@ public class DataSourceFactoryBean implements FactoryBean<DataSource>, Initializ
 	
 	private Properties connectionProperties;
 	
+	private	String username;
+		
+	private	String password;
+	
 	/**
 	 * Properties used by the ConnectionPoolConfig
 	 * 
@@ -140,7 +144,7 @@ public class DataSourceFactoryBean implements FactoryBean<DataSource>, Initializ
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		log.debug("Initializing Stardog connection configuration");
-		SecurityUtil.setupSingletonSecurityManager();
+		// SecurityUtil.setupSingletonSecurityManager();
 		
 		ConnectionPool pool;
 		
@@ -148,14 +152,18 @@ public class DataSourceFactoryBean implements FactoryBean<DataSource>, Initializ
 		
 		ConnectionPoolConfig poolConfig;
 		
-		connectionConfig = ConnectionConfiguration.to(to);
+		
+		connectionConfig = ConnectionConfiguration.to(to).credentials(username, password);
 		
 		if (url != null) { 
 			connectionConfig = connectionConfig.url(url);
 		}
 		
-		if (createIfNotPresent) { 
-			StardogDBMS.get().createMemory(to);
+		if (createIfNotPresent) {
+			StardogDBMS.startEmbeddedServer();	
+			StardogDBMS dbms = StardogDBMS.login(username, password.toCharArray());		 
+			dbms.createMemory(to);
+			dbms.logout();
 		}
 		
 		if (connectionProperties != null) { 
@@ -195,6 +203,18 @@ public class DataSourceFactoryBean implements FactoryBean<DataSource>, Initializ
 	 */
 	public void setUrl(String url) {
 		this.url = url;
+	}
+	
+	public String getUsername() {
+		return this.username;
+	}
+	
+	public void setUsername(String username) {
+		this.username = username;
+	}
+	
+	public void setPassword(String password) {
+		this.password = password;
 	}
 
 	/**
